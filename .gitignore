@@ -5,5 +5,7 @@ ReleaseManagement.Framework/obj/
 ReleaseManagement.Framework/bin/
 ReleaseManagement/obj/
 ReleaseManagement/bin/
-
+.vs/
 *.db
+
+ReleaseManagement/appsettings.json

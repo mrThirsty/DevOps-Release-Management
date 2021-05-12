@@ -8,17 +8,14 @@
 
   <ItemGroup>
     <PackageReference Include="Blazored.Modal" Version="6.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.AzureAD.UI" Version="5.0.3" />
-    <PackageReference Include="Microsoft.Identity.Web" Version="1.7.0" />
-    <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.7.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.AzureAD.UI" Version="5.0.6" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="1.9.2" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.9.2" />
     <PackageReference Include="MatBlazor" Version="2.8.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ReleaseManagement.Framework\ReleaseManagement.Framework.csproj" />
-    <ProjectReference Include="..\..\GIT\Libraries\Thirsol.Notifications.Toasts\Thirsol.Notifications.Toasts.csproj">
-      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
-    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -29,4 +26,9 @@
     <Folder Include="Helpers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Thirsol.Notifications.Toasts">
+      <HintPath>..\Library\Thirsol.Notifications.Toasts.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>
