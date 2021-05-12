@@ -1,0 +1,9 @@
+
+.DS_Store
+
+ReleaseManagement.Framework/obj/
+ReleaseManagement.Framework/bin/
+ReleaseManagement/obj/
+ReleaseManagement/bin/
+
+*.db
