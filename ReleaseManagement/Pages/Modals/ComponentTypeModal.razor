@@ -1,0 +1,49 @@
+@inherits Base.RMModalBase
+
+@inject ReleaseManagement.Framework.Interfaces.IComponentTypeDataService service
+
+@using ReleaseManagement.Framework.Data.Model
+
+<div class="simple-form">
+    <div class="form-group">
+        <label for="item-component-name">Component Name</label>
+        <input @bind="Item.ComponentName" type="text" class="form-control" id="item-component-name" />
+    </div>
+    <button @onclick="SaveItem" class="btn btn-outline-primary">Save</button>
+    <button @onclick="BlazoredModal.CancelAsync" class="btn btn-outline-secondary">Cancel</button>
+</div>
+
+
+@code {
+
+    ComponentType Item { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        string title = "Add Component Type";
+
+        if (RecordId > 0)
+        {
+            var response = await service.Find(RecordId);
+
+            Item = UIHelper.ProcessServiceResponse<ComponentType>(response, ToastService);
+
+            title = $"Edit {Item.ComponentName}";
+        }
+        else
+            Item = new ComponentType();
+
+        BlazoredModal.SetTitle(title);
+    }
+
+    private async void SaveItem()
+    {
+        var response = await service.Save(Item);
+
+        UIHelper.ProcessServiceResponseMessage(response, ToastService);
+
+        if (response.OperationStatus == Framework.Enums.OperationResult.Success)
+            await BlazoredModal.CloseAsync(ModalResult.Ok<ComponentType>(Item));
+    }
+}

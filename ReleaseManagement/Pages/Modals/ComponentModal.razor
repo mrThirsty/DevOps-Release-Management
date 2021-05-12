@@ -1,0 +1,71 @@
+@inherits Base.RMModalBase
+
+@inject ReleaseManagement.Framework.Interfaces.IComponentDataService service
+@inject ReleaseManagement.Framework.Interfaces.IComponentTypeDataService typeService
+
+@using ReleaseManagement.Framework.Data.Model
+
+<div class="simple-form">
+    <div class="form-group">
+        <label for="item-component-name">Component Name</label>
+        <input @bind="Item.ComponentName" type="text" class="form-control" id="item-component-name" />
+    </div>
+    <div class="form-group">
+        <label for="item-component-type">Component Type</label>
+        <select @bind="Item.ComponentTypeId">
+            @if(Types != null)
+            {
+                foreach(ComponentType type in Types)
+                {
+                    <option value="@type.Id">@type.ComponentName</option>
+                }
+            }
+        </select> 
+    </div>
+    <div class="form-group">
+        <label for="item-enable">Enabled</label>
+        <MatSlideToggle @bind-Value="Item.Enabled"></MatSlideToggle>
+    </div>
+    <button @onclick="SaveItem" class="btn btn-outline-primary">Save</button>
+    <button @onclick="BlazoredModal.CancelAsync" class="btn btn-outline-secondary">Cancel</button>
+</div>
+
+
+@code {
+
+    Component Item { get; set; }
+
+    IQueryable<ComponentType> Types {get;set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var typesResponse = await typeService.Get();
+
+        Types = UIHelper.ProcessServiceResponse<IQueryable<ComponentType>>(typesResponse, ToastService);
+
+        string title = "Add Component";
+
+        if (RecordId > 0)
+        {
+            var itemResponse = await service.Find(RecordId);
+
+            Item = UIHelper.ProcessServiceResponse<Component>(itemResponse, ToastService);
+
+            title = $"Edit {Item.ComponentName}";
+        }
+        else
+            Item = new Component();
+
+        BlazoredModal.SetTitle(title);
+    }
+
+    private async void SaveItem()
+    {
+        var saveResponse = await service.Save(Item);
+
+        UIHelper.ProcessServiceResponseMessage(saveResponse, ToastService);
+
+        if(saveResponse.OperationStatus == Framework.Enums.OperationResult.Success)
+            await BlazoredModal.CloseAsync(ModalResult.Ok<Component>(Item));
+    }
+}

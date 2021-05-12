@@ -1,0 +1,16 @@
+﻿<AuthorizeView>
+    <Authorized>
+        @if (context.User.HasClaim(c => c.Type.Equals(ReleaseManagement.Framework.ReleaseConstants.Security.Claims.Name)))
+        {
+            <text>Hello, </text>@context.User.FindFirst(ReleaseManagement.Framework.ReleaseConstants.Security.Claims.Name).Value
+        }
+        else
+        {
+            <text>Hello, </text>@context.User.Identity.Name
+        }
+        <a href="MicrosoftIdentity/Account/SignOut">Log out</a>
+    </Authorized>
+    <NotAuthorized>
+        <a href="MicrosoftIdentity/Account/SignIn">Log in</a>
+    </NotAuthorized>
+</AuthorizeView>

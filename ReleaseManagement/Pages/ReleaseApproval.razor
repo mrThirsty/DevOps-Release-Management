@@ -1,0 +1,110 @@
+@page "/releaseapproval"
+@page "/releaseapproval/{ReleaseId:int}"
+
+@inherits Base.RMComponentBase
+
+@attribute [Authorize(Policy = "GroupAny")]
+
+@inject ReleaseManagement.Framework.Interfaces.IReleaseDataService releaseService
+@inject ReleaseManagement.Framework.Interfaces.IComponentApprovalDataService approvalService
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <h1>Release Approvals</h1>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <select value="@ReleaseId" @onchange="LoadComponentsForRelease">
+                <option value="-1">Select Release to approve</option>
+                @if(Releases != null)
+                {
+                    foreach (var release in Releases)
+                    {
+                        <option value="@release.Id">@release.ReleaseName</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Component</th>
+                        <th scope="col">Approved</th>
+                        <th scope="col">Date Changed</th>
+                        <th scope="col">Changed By</th>
+                    </tr> 
+                </thead>
+                <tbody>
+                    @if(Approvals != null)
+                    {
+                        foreach(var item in Approvals)
+                        {
+                            <tr>
+                                <td>@item.Component.ComponentName</td>
+                                <td>
+                                    <ApprovalDisplay ApprovalId="@item.Id" Approved="@item.Approved" UserId="@LoggedInUser.UserId" UserName="@LoggedInUser.DisplayName" OnChange="ItemApprovalChanged"/>
+                                </td>
+                                <td>
+                                    @item.ApprovalDate.ToString("dd/MM/yyyy hh:mm")
+                                </td>
+                                <td>
+                                    @item.ApprovedBy
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div> 
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int ReleaseId { get;set; } = -1;
+
+    private IQueryable<ReleaseManagement.Framework.Data.Model.Release> Releases;
+    private IQueryable<ReleaseManagement.Framework.Data.Model.ComponentApproval> Approvals;
+
+    override async protected Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var releasesResponse = await releaseService.Get();
+
+        Releases = UIHelper.ProcessServiceResponse<IQueryable<ReleaseManagement.Framework.Data.Model.Release>>(releasesResponse, ToastService);
+
+        LoadComponents();
+    }
+
+    private async void LoadComponentsForRelease(ChangeEventArgs e)
+    {
+        ReleaseId = Convert.ToInt32(e.Value);
+
+        LoadComponents();
+    }
+
+    private async void LoadComponents()
+    {
+        if(ReleaseId > 0)
+        {
+            var approvalsResponse = await approvalService.GetForRelease(ReleaseId);
+
+            Approvals = UIHelper.ProcessServiceResponse<IQueryable<ReleaseManagement.Framework.Data.Model.ComponentApproval>>(approvalsResponse, ToastService);
+        }
+        else
+        {
+            Approvals = null;
+        }
+    }
+
+    private void ItemApprovalChanged(ReleaseManagement.Framework.Events.ApprovalChangeEvent args)
+    {
+        LoadComponents();
+    }
+}

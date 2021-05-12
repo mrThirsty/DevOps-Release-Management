@@ -1,0 +1,71 @@
+@inherits Base.RMModalBase
+
+@inject ReleaseManagement.Framework.Interfaces.IAuditHeaderDataService service
+@inject NavigationManager navManager
+
+@using ReleaseManagement.Framework.Data.Model
+@using System.Linq
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Change Type</th>
+                        <th>Changed By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var audit in Items)
+                    {
+                        <tr>
+                            <td>@audit.Timestamp.ToString("dd/MM/yyyy hh:mm:ss")</td>
+                            <td>@audit.ChangeType</td>
+                            <td>@audit.User</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <button @onclick="ViewAudit" class="btn btn-outline-info">View Full Audit</button>
+    <button @onclick="CloseAudit" class="btn btn-outline-primary">Close</button>
+</div>
+
+
+@code {
+
+    [Parameter]
+    public string RecordType { get;set; }
+
+    IQueryable<AuditHeader> Items { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        string title = $"Audit - {RecordType}:({RecordId})";
+
+        if (RecordId > 0 && !String.IsNullOrWhiteSpace(RecordType))
+        {
+            var itemsResponse = await service.Find(item => item.RecordType.Equals(RecordType) && item.RecordId.Equals(RecordId));
+
+            Items = UIHelper.ProcessServiceResponse<IQueryable<AuditHeader>>(itemsResponse, ToastService);
+
+            Items = Items.OrderByDescending(i => i.Timestamp);
+        }
+
+        BlazoredModal.SetTitle(title);
+    }
+
+    private async void CloseAudit()
+    {
+        await BlazoredModal.CloseAsync();
+    }
+
+    private void ViewAudit()
+    {
+        navManager.NavigateTo($"RecordAudit/{RecordType}/{RecordId}");
+    }
+}

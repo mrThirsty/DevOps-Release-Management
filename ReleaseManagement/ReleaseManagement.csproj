@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <UserSecretsId>aspnet-ReleaseManagement-D74F6DF1-EAEE-48CA-B339-823EF9C007F6</UserSecretsId>
+    <WebProject_DirectoryAccessLevelKey>0</WebProject_DirectoryAccessLevelKey>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Blazored.Modal" Version="6.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.AzureAD.UI" Version="5.0.3" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="1.7.0" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="1.7.0" />
+    <PackageReference Include="MatBlazor" Version="2.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReleaseManagement.Framework\ReleaseManagement.Framework.csproj" />
+    <ProjectReference Include="..\..\GIT\Libraries\Thirsol.Notifications.Toasts\Thirsol.Notifications.Toasts.csproj">
+      <GlobalPropertiesToRemove></GlobalPropertiesToRemove>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Pages\Modals\" />
+    <Folder Include="wwwroot\js\" />
+    <Folder Include="Pages\Base\" />
+    <Folder Include="Controllers\" />
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
+</Project>

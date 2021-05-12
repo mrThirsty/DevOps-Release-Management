@@ -1,0 +1,75 @@
+@page "/RecordAudit/{RecordType}/{RecordId:int}"
+@inherits Base.RMComponentBase
+
+@inject ReleaseManagement.Framework.Interfaces.IAuditService auditService
+
+@attribute [Authorize(Policy = "GroupAdmin")]
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <h1>Audit Log - @RecordType:(@RecordId)</h1>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Timestamp</th>
+                        <th scope="col">Changed By</th>
+                        <th scope="col">Change Type</th>
+                        <th scope="col">Field</th>
+                        <th scope="col">From</th>
+                        <th scope="col">To</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var header in headers)
+                    {
+                        foreach(var item in header.AuditItems)
+                        {
+                            <tr>
+                                <td>@header.Timestamp.ToString("dd/MM/yyyy hh:mm:ss")</td>
+                                <td>@header.User</td>
+                                <td>@header.ChangeType</td>
+                                <td>@item.Field</td>
+                                <td>@item.OldValue</td>
+                                <td>@item.NewValue</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string RecordType { get;set; }
+
+    [Parameter]
+    public int RecordId { get;set;} = -1;
+
+    private ReleaseManagement.Framework.Data.Model.AuditHeader[] headers;
+
+    protected async override Task OnInitializedAsync()
+    {
+        try
+        {
+            await base.OnInitializedAsync();
+
+            if(RecordId > -1 && !String.IsNullOrWhiteSpace(RecordType))
+            {
+                var results = await auditService.GetAuditDetails(RecordType, RecordId);
+
+                headers = results.OrderByDescending(i => i.Timestamp).ToArray();
+            }
+        }
+        catch(Exception ex)
+        {
+            ToastService.ShowError(ex.Message, "On Init Async");
+        }
+    }
+}

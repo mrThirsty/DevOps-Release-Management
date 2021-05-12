@@ -1,0 +1,53 @@
+﻿@page "/"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+@if(Claims.Count > 0)
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        @foreach(var claim in Claims)
+        {
+            <tr>
+                <td>@claim.ClaimType</td>
+                <td>@claim.Value</td>
+            </tr>
+        }
+    </table>
+}
+
+@code {     
+    private List<MyClaim> Claims = new List<MyClaim>();
+    protected async override Task OnInitializedAsync()
+    {
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            List<string> data = new List<string>();
+
+            foreach(var claim in user.Claims)
+            {
+                Claims.Add(new MyClaim() { ClaimType = claim.Type, Value = claim.Value});
+            }
+        }
+    }
+
+    public class MyClaim
+    {
+        public string ClaimType { get; set; }
+        public string Value { get; set; }
+    }
+}

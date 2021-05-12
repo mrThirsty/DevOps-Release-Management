@@ -1,0 +1,119 @@
+@page "/componenttype"
+@inherits Base.RMComponentBase
+
+@attribute [Authorize(Policy = "GroupAdmin")]
+
+@inject ReleaseManagement.Framework.Interfaces.IComponentTypeDataService service
+@inject IModalService modalService
+
+<h1>Component Types</h1>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-outline-success" @onclick="Add" data-toggle="tooltip" data-placement="top" title="Add a new component type.">
+                <i class="bi bi-file-plus"></i>
+            </button>
+        </div>
+    </div>
+    <div class="Row">
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Active</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (data != null)
+                    {
+                        foreach (var record in data)
+                        {
+                            <tr>
+                                <td>@record.ComponentName</td>
+                                <td>@(record.Active ? "Yes" : "No")</td>
+                                <td>
+                                    <button class="btn btn-outline-info" @onclick="@(() => Edit(record.Id))" data-toggle="tooltip" data-placement="top" title="Edit this component type.">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+
+                                    <button class="btn btn-outline-danger" @onclick="@(() => Delete(record.Id))" data-toggle="tooltip" data-placement="top" title="Delete this component type.">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning" @onclick="@(() => ShowAudit(record.Id))" data-toggle="tooltip" data-placement="top" title="See Audit log">
+                                        <i class="bi bi-card-list"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    IQueryable<ReleaseManagement.Framework.Data.Model.ComponentType> data;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await LoadData();
+    }
+
+    private async void Add()
+    {
+        var addModel = modalService.Show<ComponentTypeModal>();
+
+        var result = await addModel.Result;
+
+        if(!result.Cancelled)
+        {
+            await LoadData();
+        }
+
+        RefreshUI();
+    }
+
+    private async void Edit(int id)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(ComponentTypeModal.RecordId), id);
+
+        var editModal = modalService.Show<ComponentTypeModal>("Edit Component Type", parameters);
+
+        var result = await editModal.Result;
+
+        if(!result.Cancelled)
+        {
+            await LoadData();
+        }
+
+        RefreshUI();
+    }
+
+    private async void Delete(int id)
+    {
+        var deleteResponse = await service.Delete(id);
+
+        UIHelper.ProcessServiceResponseMessage(deleteResponse, ToastService);
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var dataResponse = await service.Get();
+
+        data = UIHelper.ProcessServiceResponse<IQueryable<ReleaseManagement.Framework.Data.Model.ComponentType>>(dataResponse, ToastService);
+    }
+
+    private void ShowAudit(int id)
+    {
+        ShowAuditModal(id, typeof(ReleaseManagement.Framework.Data.Model.ComponentType).Name);
+    }
+} 

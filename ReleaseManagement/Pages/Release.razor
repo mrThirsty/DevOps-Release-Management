@@ -1,0 +1,125 @@
+@page "/release"
+@inherits Base.RMComponentBase
+ 
+@attribute [Authorize(Policy = "GroupAdmin")]
+
+@inject ReleaseManagement.Framework.Interfaces.IReleaseDataService service
+@inject NavigationManager navManager
+
+<h1>Releases</h1>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-outline-success" @onclick="Add" data-toggle="tooltip" data-placement="top" title="Add a new Release.">
+                <i class="bi bi-file-plus"></i>
+            </button>
+        </div>
+    </div>
+    <div class="Row">
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (data != null)
+                    {
+                        foreach (var record in data)
+                        {
+                            <tr>
+                                <td>@record.ReleaseName</td>
+                                <td>
+                                    <button class="btn btn-outline-secondary" @onclick="@(() => GoToApprovals(record.Id))" data-toggle="tooltip" data-placement="top" title="Approve components for release.">
+                                        <i class="bi bi-diagram-3"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info" @onclick="@(() => Edit(record.Id))" data-toggle="tooltip" data-placement="top" title="Edit this release.">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+
+                                    <button class="btn btn-outline-danger" @onclick="@(() => Delete(record.Id))" data-toggle="tooltip" data-placement="top" title="Delete this release.">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning" @onclick="@(() => ShowAudit(record.Id))" data-toggle="tooltip" data-placement="top" title="See Audit log">
+                                        <i class="bi bi-card-list"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    IQueryable<ReleaseManagement.Framework.Data.Model.Release> data;
+
+    protected async override Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await LoadData();
+    }
+
+    private async void Add()
+    {
+        var addModel = ModalService.Show<ReleaseModal>();
+
+        var result = await addModel.Result;
+
+        if (!result.Cancelled)
+        {
+            await LoadData();
+        }
+
+        RefreshUI();
+    }
+
+    private async void Edit(int id)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(ReleaseModal.RecordId), id);
+
+        var editModal = ModalService.Show<ReleaseModal>("Edit Release", parameters);
+
+        var result = await editModal.Result;
+
+        if (!result.Cancelled)
+        {
+            await LoadData();
+        }
+
+        RefreshUI();
+    }
+
+    private async void Delete(int id)
+    {
+        var deleteResponse = await service.Delete(id);
+
+        UIHelper.ProcessServiceResponseMessage(deleteResponse, ToastService);
+
+        await LoadData();
+    }
+
+    private void ShowAudit(int id)
+    {
+        ShowAuditModal(id, typeof(ReleaseManagement.Framework.Data.Model.Release).Name);
+    }
+
+    private void GoToApprovals(int id)
+    {
+        navManager.NavigateTo($"releaseapproval/{id}");
+    }
+
+    private async Task LoadData()
+    {
+        var dataResponse = await service.Get();
+
+        data = UIHelper.ProcessServiceResponse<IQueryable<ReleaseManagement.Framework.Data.Model.Release>>(dataResponse,ToastService);
+    }
+} 

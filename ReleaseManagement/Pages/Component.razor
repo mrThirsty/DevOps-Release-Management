@@ -1,0 +1,173 @@
+@page "/component"
+
+@inherits Base.RMComponentBase
+
+@attribute [Authorize(Policy = "GroupAdmin")]
+
+@inject ReleaseManagement.Framework.Interfaces.IComponentDataService service
+@inject IModalService modalService
+
+<h1>Components</h1> 
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-outline-success" @onclick="Add" data-toggle="tooltip" data-placement="top" title="Add a new component.">
+                <i class="bi bi-file-plus"></i>
+            </button>
+        </div>
+    </div>
+    <div class="Row">
+        <div class="col">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Enabled</th>
+                        <th>&nbsp;</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (data != null)
+                    {
+                        foreach (var record in data)
+                        {
+                            <tr>
+                                <td>@record.ComponentName.</td>
+                                <td>
+                                    @if(record.ComponentType != null)
+                                    {
+                                        <text>@record.ComponentType.ComponentName</text>
+                                    }
+                                    else
+                                    {
+                                        <text>Not Available</text>
+                                    }
+
+                                </td>
+                                <td>
+                                    <MatSlideToggle @bind-Value="record.Enabled" Disabled="true"></MatSlideToggle>
+                                </td>
+                                <td>
+                                    <button class="btn btn-outline-info" @onclick="@(() => Edit(record.Id))" data-toggle="tooltip" data-placement="top" title="Edit this component.">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+
+                                    <button class="btn btn-outline-danger" @onclick="@(() => Delete(record.Id))" data-toggle="tooltip" data-placement="top" title="Delete this component.">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning" @onclick="@(() => ShowAudit(record.Id))" data-toggle="tooltip" data-placement="top" title="See Audit log">
+                                        <i class="bi bi-card-list"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code { 
+    IQueryable<ReleaseManagement.Framework.Data.Model.Component> data;
+
+    protected async override Task OnInitializedAsync()
+    {
+        try
+        {
+            await base.OnInitializedAsync();
+
+            await LoadData();
+        }
+        catch(Exception ex)
+        {
+            ToastService.ShowError(ex.Message, "On Init Async");
+        }
+    }
+
+    private async void Add()
+    {
+        try
+        {
+            var addModel = modalService.Show<ComponentModal>();
+
+            var result = await addModel.Result;
+
+            if (!result.Cancelled)
+            {
+                await LoadData();
+            }
+            else
+            {
+                await LoadData();
+            }
+
+            RefreshUI();
+        }
+        catch(Exception ex)
+        {
+            ToastService.ShowError(ex.Message, "Add Modal error");
+        }
+    }
+
+    private async void Edit(int id)
+    {
+        try
+        {
+            var parameters = new ModalParameters();
+            parameters.Add(nameof(ComponentModal.RecordId), id);
+
+            var editModal = modalService.Show<ComponentModal>("Edit Component", parameters);
+
+            var result = await editModal.Result;
+
+            if (!result.Cancelled)
+            {
+                await LoadData();
+            }
+
+            RefreshUI();
+        }
+        catch(Exception ex)
+        {
+            ToastService.ShowError(ex.Message, "Edit Modal");
+        }
+    }
+
+    private async void Delete(int id)
+    {
+        try
+        {
+            var deleteResponse = await service.Delete(id);
+
+            UIHelper.ProcessServiceResponseMessage(deleteResponse, ToastService);
+
+            await LoadData();
+
+        }catch(Exception ex)
+        {
+            ToastService.ShowError(ex.Message, "Delete");
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            var dataResponse = await service.Get();
+
+            data = UIHelper.ProcessServiceResponse<IQueryable<ReleaseManagement.Framework.Data.Model.Component>>(dataResponse, ToastService);
+        }
+        catch(Exception ex)
+        {
+            ToastService.ShowError(ex.Message, "Load Data");
+        }
+    }
+
+    private void ShowAudit(int id)
+    {
+        ShowAuditModal(id, typeof(ReleaseManagement.Framework.Data.Model.Component).Name);
+    }
+} 

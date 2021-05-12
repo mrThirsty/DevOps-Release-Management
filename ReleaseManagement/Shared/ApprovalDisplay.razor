@@ -1,0 +1,69 @@
+@inject ReleaseManagement.Framework.Interfaces.IComponentApprovalDataService service
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <button class="@cssApproveClass" @onclick="(() => SetApproval(true))">
+                <i class="bi bi-check-square"></i>
+            </button>
+            <button class="@cssDeclinedClass" @onclick="(() => SetApproval(false))">
+                <i class="bi bi-x-square"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int ApprovalId { get;set; }
+
+    [Parameter]
+    public bool Approved { get;set; }
+
+    [Parameter]
+    public string UserId { get;set; }
+    
+    [Parameter]
+    public string UserName { get;set; }
+
+    [Parameter]
+    public Action<ReleaseManagement.Framework.Events.ApprovalChangeEvent> OnChange { get;set; }
+
+    private string cssApproveClass;
+    private string cssDeclinedClass;
+
+    protected override Task OnInitializedAsync()
+    {
+        SetCssClasses();
+
+        return base.OnInitializedAsync();
+    }
+
+    private async void SetApproval(bool value)
+    {
+        if(Approved != value)
+        {
+            await service.SetApproval(ApprovalId, value, UserId, UserName);
+            Approved = value;
+            SetCssClasses();
+
+            ReleaseManagement.Framework.Events.ApprovalChangeEvent args = 
+            new ReleaseManagement.Framework.Events.ApprovalChangeEvent()
+            {
+                ApprovalId = ApprovalId,
+                Approved = value,
+                DateChanged = DateTime.Now,
+                ApprovedBy = UserName,
+                ApprovedById = UserId
+            };
+
+            OnChange?.Invoke(args);
+        }
+    }
+
+    private void SetCssClasses()
+    {
+        cssApproveClass = Approved ? "btn btn-success" : "btn btn-outline-success";
+        cssDeclinedClass = Approved ? "btn btn-outline-danger" : "btn btn-danger";
+    }
+}    
