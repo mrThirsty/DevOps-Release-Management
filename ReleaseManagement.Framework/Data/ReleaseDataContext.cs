@@ -18,6 +18,7 @@ namespace ReleaseManagement.Framework.Data
         public DbSet<Log> Logs { get;set; }
         public DbSet<AuditHeader> AuditHeaders { get;set; }
         public DbSet<AuditItem> AuditItems { get;set; }
+        public DbSet<SystemSetting> SystemSettings { get;set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
