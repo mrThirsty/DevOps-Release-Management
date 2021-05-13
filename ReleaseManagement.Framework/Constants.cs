@@ -22,5 +22,19 @@ namespace ReleaseManagement.Framework
                 public const string UserId = "http://schemas.microsoft.com/identity/claims/objectidentifier";
             }
         }
+
+        public static class SettingKeys
+        {
+            public const string AUTH_TYPE = "AUTH_TYPE";
+            public const string AZURE_INSTANCE = "AZURE_INSTANCE";
+            public const string AZURE_DOMAIN = "AZURE_DOMAIN";
+            public const string AZURE_TENANTID = "AZURE_TENANTID";
+            public const string AZURE_CLIENTID = "AZURE_CLIENTID";
+            public const string AZURE_CALLBACKPATH = "AZURE_CALLBACKPATH";
+            public const string AZURE_SIGNEDOUTCALLBACKPATH = "AZURE_SIGNEDOUTCALLBACKPATH";
+            public const string AZURE_CLIENTSECRET = "AZURE_CLIENTSECRET";
+            public const string AZURE_GROUPADMIN = "AZURE_GROUPADMIN";
+            public const string AZURE_GROUPMEMBER = "AZURE_GROUPMEMBER";
+        }
     }
 }

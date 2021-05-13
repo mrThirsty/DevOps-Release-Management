@@ -19,6 +19,7 @@ using ReleaseManagement.Framework.Data;
 using ReleaseManagement.Framework.Graph;
 using ReleaseManagement.Framework.Interfaces;
 using ReleaseManagement.Framework.Logging;
+using ReleaseManagement.Framework.Managers;
 using ReleaseManagement.Framework.Services;
 using Thirsol.Notifications.Toasts;
 
@@ -37,78 +38,74 @@ namespace ReleaseManagement
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            //services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme).AddMicrosoftIdentityWebApp(Configuration.GetSection("AzureAd"));
+            var dbOptions = new DbContextOptionsBuilder<ReleaseDataContext>().UseSqlite(Configuration.GetConnectionString("ReleaseDB"));
+            ReleaseDataContext context = new ReleaseDataContext(dbOptions.Options);
 
-            var initialScopes = new string[] { ReleaseConstants.Security.ScopeUserRead, ReleaseConstants.Security.ScopeGroupMemberRead };
+            context.Database.Migrate();
 
-            services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme).AddMicrosoftIdentityWebApp(options => {
-                Configuration.Bind("AzureAd", options);
-                options.Events = new OpenIdConnectEvents();
-                options.Events.OnTokenValidated = async context =>
+            //services.AddDbContext<ReleaseDataContext>(options =>
+            //    options.UseSqlite(
+            //        Configuration.GetConnectionString("ReleaseDB")), ServiceLifetime.Singleton);
+
+            ISettingsManager settings = new SettingsManager(context);
+            ISecurityManager security = new SecurityManager(settings);
+
+            security.VerifyAndLoadAuthConfig();
+
+            services.AddSingleton<ISecurityManager>(security);
+            services.AddSingleton<ISettingsManager>(settings);
+            services.AddSingleton<ReleaseDataContext>(context);
+
+            if(security.IsConfigured)
+            {
+                security.Configure(services, Configuration);
+
+                services.AddDistributedMemoryCache();
+
+                services.AddSession(options =>
                 {
-                    var overageGroupClaims = await GraphHelper.GetSignedInUsersGroups(context);
-                };
-            }).EnableTokenAcquisitionToCallDownstreamApi(options => Configuration.Bind("AzureAd", options), initialScopes)
-                    .AddMicrosoftGraph(Configuration.GetSection("GraphAPI"))
-                    .AddInMemoryTokenCaches();
-
-
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy("GroupAdmin", policy => policy.Requirements.Add(new GroupPolicyRequirement(Configuration["Groups:GroupAdmin"])));
-                options.AddPolicy("GroupMember", policy => policy.Requirements.Add(new GroupPolicyRequirement(Configuration["Groups:GroupMember"])));
-                options.AddPolicy("GroupAny", policy => { 
-                    policy.Requirements.Add(new GroupPolicyRequirement(Configuration["Groups:GroupMember"], Configuration["Groups:GroupAdmin"]));
+                    options.Cookie.HttpOnly = true;
+                    options.Cookie.IsEssential = true;
                 });
-            });
 
-            services.AddSingleton<IAuthorizationHandler, GroupPolicyHandler>();
+                services.AddControllersWithViews(options =>
+                {
+                    var policy = new AuthorizationPolicyBuilder()
+                        .RequireAuthenticatedUser()
+                        .Build();
+                    options.Filters.Add(new AuthorizeFilter(policy));
+                }).AddMicrosoftIdentityUI();
 
-            services.AddDistributedMemoryCache();
+                services.AddRazorPages();
+                services.AddServerSideBlazor().AddMicrosoftIdentityConsentHandler();
 
-            services.AddSession(options =>
+                services.AddBlazoredModal();
+                services.UseToasts();
+                services.AddMatBlazor();
+
+                services.AddHttpContextAccessor();
+
+                services.AddMvc(options => options.EnableEndpointRouting = false).SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0);
+
+                services.AddSingleton<IComponentTypeDataService, ComponentTypeDataService>();
+                services.AddSingleton<IReleaseDataService, ReleaseDataService>();
+                services.AddSingleton<IComponentDataService, ComponentDataService>();
+                services.AddSingleton<IComponentApprovalDataService, ComponentApprovalDataService>();
+                services.AddSingleton<ILogDataService, LogDataService>();
+                services.AddSingleton<IAuditHeaderDataService, AuditHeaderDataService>();
+                services.AddSingleton<IAuditItemDataService, AuditItemDataService>();
+
+                services.AddTransient<IAuditService, AuditService>();
+                services.AddTransient<IRMLogger, ReleaseManagementLogger>();
+            }
+            else
             {
-                options.Cookie.HttpOnly = true;
-                options.Cookie.IsEssential = true;
-            });
 
-            services.AddDbContext<ReleaseDataContext>(options =>
-                options.UseSqlite(
-                    Configuration.GetConnectionString("ReleaseDB")), ServiceLifetime.Singleton);
-
-            services.AddControllersWithViews(options =>
-            {
-                var policy = new AuthorizationPolicyBuilder()
-                    .RequireAuthenticatedUser()
-                    .Build();
-                options.Filters.Add(new AuthorizeFilter(policy));
-            }).AddMicrosoftIdentityUI();
-
-            services.AddRazorPages();
-            services.AddServerSideBlazor().AddMicrosoftIdentityConsentHandler();
-
-            services.AddBlazoredModal();
-            services.UseToasts();
-            services.AddMatBlazor();
-
-            services.AddHttpContextAccessor();
-
-            services.AddMvc(options => options.EnableEndpointRouting = false).SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0);
-
-            services.AddSingleton<IComponentTypeDataService, ComponentTypeDataService>();
-            services.AddSingleton<IReleaseDataService, ReleaseDataService>();
-            services.AddSingleton<IComponentDataService, ComponentDataService>();
-            services.AddSingleton<IComponentApprovalDataService, ComponentApprovalDataService>();
-            services.AddSingleton<ILogDataService, LogDataService>();
-            services.AddSingleton<IAuditHeaderDataService, AuditHeaderDataService>();
-            services.AddSingleton<IAuditItemDataService, AuditItemDataService>();
-
-            services.AddTransient<IAuditService, AuditService>();
-            services.AddTransient<IRMLogger, ReleaseManagementLogger>();
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ReleaseDataContext dbContext)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ISecurityManager secManager)
         {
             if (env.IsDevelopment())
             {
@@ -121,15 +118,16 @@ namespace ReleaseManagement
                 app.UseHsts();
             }
 
-            dbContext.Database.Migrate();
-
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
 
-            app.UseAuthentication();
-            app.UseAuthorization();
+            if(secManager.IsConfigured)
+            { 
+                app.UseAuthentication();
+                app.UseAuthorization();
+            }
 
             app.UseEndpoints(endpoints =>
             {

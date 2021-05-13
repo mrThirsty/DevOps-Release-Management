@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ReleaseManagement.Framework.Data;
 
 namespace ReleaseManagement.Framework.Migrations
 {
     [DbContext(typeof(ReleaseDataContext))]
-    partial class ReleaseDataContextModelSnapshot : ModelSnapshot
+    [Migration("20210513093255_SysSettings")]
+    partial class SysSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

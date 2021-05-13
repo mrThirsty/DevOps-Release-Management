@@ -30,5 +30,6 @@
     <Folder Include="Data\Model\API\" />
     <Folder Include="Responses\" />
     <Folder Include="Enums\" />
+    <Folder Include="Managers\" />
   </ItemGroup>
 </Project>
